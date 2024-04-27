@@ -1,4 +1,5 @@
 import pygame
+from random import randint
 
 pygame.init()
 run = True
@@ -15,24 +16,16 @@ clock = pygame.time.Clock()
 FPS = 60
 
 
-class Player(pygame.sprite.Sprite):
-    def __init__(self):
+# Spaceship parent class for enemy's ship and player
+class Ship(pygame.sprite.Sprite):
+    def __init__(self, character):
         super().__init__()
         self.static_frame_timer = pygame.time.get_ticks()
         self.static_frame_index = 1
-        self.static_frames = [pygame.image.load(f'assets/images/player/{i}.png') for i in range(1, 7)]
+        self.static_frames = [pygame.image.load(f'assets/images/{character}/{i}.png') for i in range(1, 7)]
 
-        self.image = pygame.image.load('assets/images/player/1.png')  # Initial frame
+        self.image = pygame.image.load(f'assets/images/{character}/1.png')  # Initial frame
         self.rect = self.image.get_rect()
-        self.rect.center = (400, 500)  # Initial position
-
-        self.x_vel = 5
-        self.y_vel = 5
-        self.is_moving = False
-        self.k_right = False
-        self.k_left = False
-        self.k_up = False
-        self.k_down = False
 
     def update_frame(self):
         current_time = pygame.time.get_ticks()
@@ -44,8 +37,46 @@ class Player(pygame.sprite.Sprite):
             if self.static_frame_index == 5:
                 self.static_frame_index = 1
 
+    def draw(self):
+        # Draw player to screen
+        screen.blit(self.image, self.rect)
+
+
+class Enemy(Ship):
+    def __init__(self):
+        super().__init__('enemy')
+        self.rect.center = (randint(0, WIDTH), 0)  # Initial position
+        self.x_vel = 0
+        self.y_vel = 5
+        self.x_accel = 0
+        self.y_accel = 0.01
+
     def move(self):
-        # Move player
+        if self.rect.centery == HEIGHT:
+            self.rect.centery = 0
+            self.rect.centerx = randint(0, WIDTH)
+        self.rect.centery += self.y_vel
+
+
+class Player(Ship):
+    def __init__(self):
+        super().__init__('player')
+        self.rect.center = (400, 500)  # Initial position
+
+        self.x_vel = 5
+        self.y_vel = 5
+        self.is_moving = False
+        self.k_right = False
+        self.k_left = False
+        self.k_up = False
+        self.k_down = False
+
+    def move(self):
+        # Teleport Xpos of player when out of boundaries
+        if self.rect.centerx < 0:
+            self.rect.centerx = WIDTH
+        if self.rect.centerx > WIDTH:
+            self.rect.centerx = 0
         if self.k_up:
             self.rect.centery -= self.y_vel
         elif self.k_down:
@@ -55,22 +86,27 @@ class Player(pygame.sprite.Sprite):
         elif self.k_right:
             self.rect.centerx += self.x_vel
 
-    def draw(self):
-        # Draw player to screen
-        screen.blit(self.image, self.rect)
 
-
+# Create game objects
 player = Player()
+enemy = Enemy()
 
 # Pygame main loop
 while run:
     clock.tick(FPS)
     screen.blit(background, (0, 0))
-    # Player move
+
+    # Player movements
     player.draw()
     player.move()
     player.update_frame()
 
+    # Enemy movements
+    enemy.draw()
+    enemy.move()
+    enemy.update_frame()
+
+    player.rect.colliderect(enemy)
     for event in pygame.event.get():
         # Exit game
         if event.type == pygame.QUIT:
