@@ -15,6 +15,18 @@ background = pygame.image.load('assets/images/background.jpg')
 clock = pygame.time.Clock()
 FPS = 60
 
+# Font settings
+font = pygame.font.SysFont('calibri', 15)
+font1 = pygame.font.SysFont('comicsansms', 100)
+game_over_text = font1.render('Game Over', 0, 'red')
+game_over_text_rect = game_over_text.get_rect()
+game_over_text_rect.center = (WIDTH / 2, HEIGHT / 2)
+
+# Game settings
+SCORELEVEL = 10000
+LEVEL = pygame.time.get_ticks()
+enemies = pygame.sprite.Group()
+
 
 # Spaceship parent class for enemy's ship and player
 class Ship(pygame.sprite.Sprite):
@@ -52,7 +64,7 @@ class Enemy(Ship):
         self.y_accel = 0.01
 
     def move(self):
-        if self.rect.centery == HEIGHT:
+        if self.rect.centery > HEIGHT:
             self.rect.centery = 0
             self.rect.centerx = randint(0, WIDTH)
         self.rect.centery += self.y_vel
@@ -87,14 +99,58 @@ class Player(Ship):
             self.rect.centerx += self.x_vel
 
 
-# Create game objects
+def display_info():
+    # Display information: score, destroyed ships, etc
+    info = [
+        ['Score', round(pygame.time.get_ticks(), 1)]
+    ]
+    space = 20
+    for title, data in info:
+        text = font.render(f'{title}: {data}', 0, 'white')
+        screen.blit(text, (30, 10 + space))
+        space += space
+
+
+def game_over():
+    # Game over when player collide
+    screen.fill('black')
+    screen.blit(game_over_text, game_over_text_rect)
+    pygame.display.update()
+    pygame.time.delay(1500)
+
+
+def level_up():
+    global LEVEL
+    current_time = pygame.time.get_ticks()
+    # When level up: add speed to sprites and add one sprite to all sprites
+    if current_time - LEVEL >= SCORELEVEL:
+        # Add speed
+        for e in enemies:
+            e.y_vel += 1
+        LEVEL = current_time
+        # Add enemy
+        e = Enemy()
+        enemies.add(e)
+
+
+def update_enemies():
+    # Update frames and enemies movements
+    for e in enemies:
+        e.move()
+        e.update_frame()
+
+
 player = Player()
+# Crete first enemy
 enemy = Enemy()
+enemies.add(enemy)
 
 # Pygame main loop
 while run:
     clock.tick(FPS)
     screen.blit(background, (0, 0))
+    display_info()
+    level_up()
 
     # Player movements
     player.draw()
@@ -102,11 +158,18 @@ while run:
     player.update_frame()
 
     # Enemy movements
-    enemy.draw()
-    enemy.move()
-    enemy.update_frame()
+    # enemy.draw()
+    update_enemies()
 
-    player.rect.colliderect(enemy)
+    # Draw all enemies into screen
+    enemies.draw(screen)
+
+    # Check if player collides to any enemy
+    if pygame.sprite.spritecollide(player, enemies, True):
+        game_over()
+        run = False
+        break
+
     for event in pygame.event.get():
         # Exit game
         if event.type == pygame.QUIT:
