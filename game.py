@@ -25,7 +25,10 @@ game_over_text_rect.center = (WIDTH / 2, HEIGHT / 2)
 # Game settings
 SCORELEVEL = 10000
 LEVEL = pygame.time.get_ticks()
+BULLET_COOLDOWN = 100
 enemies = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
+last_shooting = 0
 
 
 # Spaceship parent class for enemy's ship and player
@@ -99,6 +102,45 @@ class Player(Ship):
             self.rect.centerx += self.x_vel
 
 
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self, position):
+        super().__init__()
+        self.image = pygame.image.load('assets/images/bullet/bullet.png')
+        self.rect = self.image.get_rect()
+        self.rect.center = position
+        self.y_vel = -10
+
+    def move(self):
+        self.rect.centery += self.y_vel
+
+
+def update_enemies():
+    # Update frames and enemies movements
+    for e in enemies:
+        e.move()
+        e.update_frame()
+
+
+def create_bullet(pos):
+    global last_shooting
+    current_time = pygame.time.get_ticks()
+    # Check cooldown so player cannot spam
+    if current_time - last_shooting > BULLET_COOLDOWN:
+        bullet = Bullet(pos)
+        # print(bullet)
+        bullets.add(bullet)
+        last_shooting = current_time
+        # print(last_shooting)
+
+
+def update_bullets():
+    for bullet in bullets:
+        # Remove bullet from bullets if passed screen height
+        if bullet.rect.centery <= -10:
+            bullets.remove(bullet)
+        bullet.move()
+
+
 def display_info():
     # Display information: score, destroyed ships, etc
     info = [
@@ -109,14 +151,6 @@ def display_info():
         text = font.render(f'{title}: {data}', 0, 'white')
         screen.blit(text, (30, 10 + space))
         space += space
-
-
-def game_over():
-    # Game over when player collide
-    screen.fill('black')
-    screen.blit(game_over_text, game_over_text_rect)
-    pygame.display.update()
-    pygame.time.delay(1500)
 
 
 def level_up():
@@ -133,11 +167,12 @@ def level_up():
         enemies.add(e)
 
 
-def update_enemies():
-    # Update frames and enemies movements
-    for e in enemies:
-        e.move()
-        e.update_frame()
+def game_over():
+    # Game over when player collide
+    screen.fill('black')
+    screen.blit(game_over_text, game_over_text_rect)
+    pygame.display.update()
+    pygame.time.delay(1500)
 
 
 player = Player()
@@ -161,8 +196,17 @@ while run:
     # enemy.draw()
     update_enemies()
 
-    # Draw all enemies into screen
+    # Bullet movements
+    update_bullets()
+    # Draw all bullet on screen
+    bullets.draw(screen)
+
+    # Draw all enemies on screen
     enemies.draw(screen)
+
+    # Check bullet and enemy collision
+    if pygame.sprite.groupcollide(bullets, enemies, True, True):
+        pass
 
     # Check if player collides to any enemy
     if pygame.sprite.spritecollide(player, enemies, True):
@@ -179,23 +223,26 @@ while run:
             if event.key == pygame.K_ESCAPE:
                 run = False
                 break
+            # Player shooting
+            if event.key == pygame.K_SPACE:
+                create_bullet((player.rect.centerx, player.rect.top))
             # Check Player movements
             if event.key == pygame.K_LEFT:
                 player.k_left = True
-            if event.key == pygame.K_RIGHT:
+            elif event.key == pygame.K_RIGHT:
                 player.k_right = True
             if event.key == pygame.K_UP:
                 player.k_up = True
-            if event.key == pygame.K_DOWN:
+            elif event.key == pygame.K_DOWN:
                 player.k_down = True
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_LEFT:
                 player.k_left = False
-            if event.key == pygame.K_RIGHT:
+            elif event.key == pygame.K_RIGHT:
                 player.k_right = False
             if event.key == pygame.K_UP:
                 player.k_up = False
-            if event.key == pygame.K_DOWN:
+            elif event.key == pygame.K_DOWN:
                 player.k_down = False
 
     pygame.display.flip()
