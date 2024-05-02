@@ -25,7 +25,10 @@ game_over_text_rect.center = (WIDTH / 2, HEIGHT / 2)
 # Game settings
 SCORELEVEL = 10000
 LEVEL = pygame.time.get_ticks()
-BULLET_COOLDOWN = 100
+BULLET_COOLDOWN = 100  # 1 bullet every 0.1 s
+ENEMY_SPAWN_TIME = 1000   # Pawn 2 enemy per second
+LAST_SPAWN = 0  # Track Enemy Spawn Time
+DEFEAT_ENEMY = 0
 enemies = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 last_shooting = 0
@@ -67,9 +70,6 @@ class Enemy(Ship):
         self.y_accel = 0.01
 
     def move(self):
-        if self.rect.centery > HEIGHT:
-            self.rect.centery = 0
-            self.rect.centerx = randint(0, WIDTH)
         self.rect.centery += self.y_vel
 
 
@@ -114,6 +114,15 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.centery += self.y_vel
 
 
+def spawn_enemy():
+    global LAST_SPAWN
+    current_time = pygame.time.get_ticks()
+    if (current_time - LAST_SPAWN >= ENEMY_SPAWN_TIME) or len(enemies) == 0:
+        e = Enemy()
+        enemies.add(e)
+        LAST_SPAWN = current_time
+
+
 def update_enemies():
     # Update frames and enemies movements
     for e in enemies:
@@ -144,7 +153,8 @@ def update_bullets():
 def display_info():
     # Display information: score, destroyed ships, etc
     info = [
-        ['Score', round(pygame.time.get_ticks(), 1)]
+        ['Score', round(pygame.time.get_ticks(), 1)],
+        ['Dead Enemy', DEFEAT_ENEMY]
     ]
     space = 20
     for title, data in info:
@@ -155,16 +165,16 @@ def display_info():
 
 def level_up():
     global LEVEL
+    global ENEMY_SPAWN_TIME
     current_time = pygame.time.get_ticks()
     # When level up: add speed to sprites and add one sprite to all sprites
     if current_time - LEVEL >= SCORELEVEL:
         # Add speed
         for e in enemies:
             e.y_vel += 1
+        # Get more spawn in less time
+        ENEMY_SPAWN_TIME = ENEMY_SPAWN_TIME / 2
         LEVEL = current_time
-        # Add enemy
-        e = Enemy()
-        enemies.add(e)
 
 
 def game_over():
@@ -175,10 +185,8 @@ def game_over():
     pygame.time.delay(1500)
 
 
+# Create player
 player = Player()
-# Crete first enemy
-enemy = Enemy()
-enemies.add(enemy)
 
 # Pygame main loop
 while run:
@@ -187,13 +195,15 @@ while run:
     display_info()
     level_up()
 
+    # Enemy Spawn
+    spawn_enemy()
+
     # Player movements
     player.draw()
     player.move()
     player.update_frame()
 
     # Enemy movements
-    # enemy.draw()
     update_enemies()
 
     # Bullet movements
@@ -206,7 +216,7 @@ while run:
 
     # Check bullet and enemy collision
     if pygame.sprite.groupcollide(bullets, enemies, True, True):
-        pass
+        DEFEAT_ENEMY += 1
 
     # Check if player collides to any enemy
     if pygame.sprite.spritecollide(player, enemies, True):
