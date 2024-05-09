@@ -1,3 +1,5 @@
+import random
+
 import pygame
 from random import randint
 
@@ -25,13 +27,18 @@ game_over_text_rect.center = (WIDTH / 2, HEIGHT / 2)
 # Game settings
 SCORELEVEL = 10000
 LEVEL = pygame.time.get_ticks()
-BULLET_COOLDOWN = 100  # 1 bullet every 0.1 s
-ENEMY_SPAWN_TIME = 1000   # Pawn 2 enemy per second
+# Enemies setting
+ENEMY_SPAWN_TIME = 1000   # Spawn 2 enemy per second
 LAST_SPAWN = 0  # Track Enemy Spawn Time
 DEFEAT_ENEMY = 0
 enemies = pygame.sprite.Group()
+# Bullet settings
+BULLET_COOLDOWN = 100  # 1 bullet every 0.1 s
+bullet_image = pygame.image.load('assets/images/bullet/bullet.png')
 bullets = pygame.sprite.Group()
 last_shooting = 0
+# Meteor setting
+meteor_image = pygame.image.load('assets/images/meteor/meteor.png')
 
 
 # Spaceship parent class for enemy's ship and player
@@ -105,13 +112,25 @@ class Player(Ship):
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, position):
         super().__init__()
-        self.image = pygame.image.load('assets/images/bullet/bullet.png')
+        self.image = bullet_image
         self.rect = self.image.get_rect()
         self.rect.center = position
         self.y_vel = -10
 
     def move(self):
+        if self.rect.centery < -10:
+            self.kill()
         self.rect.centery += self.y_vel
+
+
+class Meteor(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = meteor_image
+        self.rect = self.image.get_rect()
+        self.rect.centerx = random.randint(0, WIDTH)
+        self.rect.centery = 0
+        self.y_vel = 3
 
 
 def spawn_enemy():
