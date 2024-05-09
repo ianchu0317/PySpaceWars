@@ -67,19 +67,6 @@ class Ship(pygame.sprite.Sprite):
         screen.blit(self.image, self.rect)
 
 
-class Enemy(Ship):
-    def __init__(self):
-        super().__init__('enemy')
-        self.rect.center = (randint(0, WIDTH), 0)  # Initial position
-        self.x_vel = 0
-        self.y_vel = 5
-        self.x_accel = 0
-        self.y_accel = 0.01
-
-    def move(self):
-        self.rect.centery += self.y_vel
-
-
 class Player(Ship):
     def __init__(self):
         super().__init__('player')
@@ -109,6 +96,35 @@ class Player(Ship):
             self.rect.centerx += self.x_vel
 
 
+class Enemy(Ship):
+    def __init__(self):
+        super().__init__('enemy')
+        self.rect.center = (randint(0, WIDTH), 0)  # Initial position
+        self.x_vel = 0
+        self.y_vel = 5
+        self.x_accel = 0
+        self.y_accel = 0.01
+
+    def move(self):
+        if self.rect.centery > WIDTH + 10:
+            self.kill()
+        self.rect.centery += self.y_vel
+
+
+class Meteor(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = meteor_image
+        self.rect = self.image.get_rect()
+        self.rect.center = (randint(0, WIDTH), 0)
+        self.y_vel = 3
+
+    def move(self):
+        if self.rect.centery > WIDTH + 10:
+            self.kill()
+        self.rect.centery += self.y_vel
+
+
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, position):
         super().__init__()
@@ -123,21 +139,16 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.centery += self.y_vel
 
 
-class Meteor(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = meteor_image
-        self.rect = self.image.get_rect()
-        self.rect.centerx = random.randint(0, WIDTH)
-        self.rect.centery = 0
-        self.y_vel = 3
-
-
 def spawn_enemy():
     global LAST_SPAWN
     current_time = pygame.time.get_ticks()
     if (current_time - LAST_SPAWN >= ENEMY_SPAWN_TIME) or len(enemies) == 0:
-        e = Enemy()
+        spawn = randint(0, 1)
+        # Random spawn
+        if spawn:
+            e = Enemy()
+        else:
+            e = Meteor()
         enemies.add(e)
         LAST_SPAWN = current_time
 
@@ -145,8 +156,9 @@ def spawn_enemy():
 def update_enemies():
     # Update frames and enemies movements
     for e in enemies:
+        if type(e) is not Meteor:
+            e.update_frame()
         e.move()
-        e.update_frame()
 
 
 def create_bullet(pos):
@@ -224,14 +236,13 @@ while run:
 
     # Enemy movements
     update_enemies()
+    # Draw all enemies on screen
+    enemies.draw(screen)
 
     # Bullet movements
     update_bullets()
     # Draw all bullet on screen
     bullets.draw(screen)
-
-    # Draw all enemies on screen
-    enemies.draw(screen)
 
     # Check bullet and enemy collision
     if pygame.sprite.groupcollide(bullets, enemies, True, True):
