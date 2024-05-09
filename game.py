@@ -1,5 +1,3 @@
-import random
-
 import pygame
 from random import randint
 
@@ -16,6 +14,18 @@ background = pygame.image.load('assets/images/background.jpg')
 # Frame settings
 clock = pygame.time.Clock()
 FPS = 60
+
+# Audio settings
+pygame.mixer.init()
+# Background music
+pygame.mixer.music.load('assets/audios/air-combat.mp3')
+pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.play(-1, 0, 0)
+# Audio effects
+shooting_sound = pygame.mixer.Sound('assets/audios/laser-gun-shot.wav')
+shooting_sound.set_volume(0.5)
+explosion_sound = pygame.mixer.Sound('assets/audios/arcade-game-explosion-echo.wav')
+shooting_sound.set_volume(0.5)
 
 # Font settings
 font = pygame.font.SysFont('calibri', 15)
@@ -167,6 +177,7 @@ def create_bullet(pos):
     # Check cooldown so player cannot spam
     if current_time - last_shooting > BULLET_COOLDOWN:
         bullet = Bullet(pos)
+        shooting_sound.play()
         # print(bullet)
         bullets.add(bullet)
         last_shooting = current_time
@@ -210,6 +221,8 @@ def level_up():
 
 def game_over():
     # Game over when player collide
+    pygame.mixer.music.stop()
+    explosion_sound.play()
     screen.fill('black')
     screen.blit(game_over_text, game_over_text_rect)
     pygame.display.update()
