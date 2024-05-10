@@ -9,6 +9,8 @@ WIDTH = 800
 HEIGHT = 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('PySpaceWars')
+icon = pygame.image.load('assets/images/icon.ico')
+pygame.display.set_icon(icon)
 background = pygame.image.load('assets/images/background.jpg')
 
 # Frame settings
