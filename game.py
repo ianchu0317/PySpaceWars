@@ -35,6 +35,7 @@ game_over_text_rect = game_over_text.get_rect()
 game_over_text_rect.center = (WIDTH / 2, HEIGHT / 2)
 
 # Game settings
+max_score = int()
 SCORELEVEL = 10000
 LEVEL = pygame.time.get_ticks()
 # Enemies setting
@@ -196,7 +197,8 @@ def display_info():
     # Display information: score, destroyed ships, etc
     info = [
         ['Score', round(pygame.time.get_ticks(), 1)],
-        ['Dead Enemy', DEFEAT_ENEMY]
+        ['Dead Enemy', DEFEAT_ENEMY],
+        ['Max Score', max_score]
     ]
     space = 20
     for title, data in info:
@@ -219,16 +221,33 @@ def level_up():
         LEVEL = current_time
 
 
+def load_score():
+    # load max score from file
+    global max_score
+    with open('log.txt', 'r') as file:
+        max_score = int(file.read())
+
+
+def save_score():
+    # Save max score to file
+    if round(pygame.time.get_ticks(), 1) > max_score:
+        with open('log.txt', 'w') as file:
+            file.write(str(round(pygame.time.get_ticks(), 1)))
+
+
 def game_over():
     # Game over when player collide
     pygame.mixer.music.stop()
+    save_score()
     explosion_sound.play()
     screen.fill('black')
     screen.blit(game_over_text, game_over_text_rect)
     pygame.display.update()
-    pygame.time.delay(1500)
+    pygame.time.delay(3000)
 
 
+# Score initialize
+load_score()
 # Create player
 player = Player()
 
@@ -299,5 +318,6 @@ while run:
                 player.k_down = False
 
     pygame.display.flip()
+save_score()
 pygame.quit()
 quit()
